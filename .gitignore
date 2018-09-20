@@ -1,0 +1,4 @@
+venv
+*.pyc
+temp_ttrade_files
+migrations
