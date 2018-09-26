@@ -26,32 +26,8 @@
             <span style="color: red;">[{{ error }}]</span>
             {% endfor %}
         </p>
-        <p>{{ form.buy() }}</p>
-        <p></p>
-        <p></p>
-        <p> Sell</p>
-        <p>
-            {{ form.ticker_symbol.label }}<br>
-            {{ form.ticker_symbol(size=32) }}<br>
-            {% for error in form.ticker_symbol.errors %}
-            <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-        <p>
-            {{ form.volume.label }}<br>
-            {{ form.volume(size=32) }}<br>
-            {% for error in form.volume.errors %}
-            <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-        <p>
-            {{ form.price.label }}<br>
-            {{ form.price(size=32) }}<br>
-            {% for error in form.price.errors %}
-            <span style="color: red;">[{{ error }}]</span>
-            {% endfor %}
-        </p>
-        <p>{{ form.sell() }}</p>
+        <p>{{ form.buy() }} {{ form.buy.label }}</p> <p>{{ form.sell() }} {{form.sell.label }}</p>
+        <p>{{ form.submit() }}</p>
         <p></p>
         <p></p>
         <p>Recent Transactions</p>

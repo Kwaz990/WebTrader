@@ -7,22 +7,24 @@ from flask_login import UserMixin, login_required
 
 
 
-
-
 @login.user_loader
 def load_user(id):
-    return accounts.query.get(int(id))
+   # return accounts
+    return Accounts.query.get((int(id)))
 
 
-class accounts(UserMixin, db.Model):
+class Accounts(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index= True, unique = True)
     email = db.Column(db.String(128), index= True, unique = True)
     password_hash = db.Column(db.String(128))
     balance = db.Column(db.Float)
     api_key = db.Column(db.Integer)
-    holdings = db.relationship('holdings', backref='positions', lazy ='dynamic')
-    orders = db.relationship('orders', backref='order_history', lazy='dynamic')
+    holdings = db.relationship('Holdings', backref='positions', lazy ='dynamic')
+    orders = db.relationship('Orders', backref='order_history', lazy='dynamic')
+#    buy = db.relationship('buy', backref='buy', lazy = 'dynamic')
+#    sell = db.relationship('sell', backref='sell', lazy = 'dynamic')
+
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -33,7 +35,7 @@ class accounts(UserMixin, db.Model):
     def __repr__(self):
         return '<accounts> {}: {}'.format(self.id, self.username)
 
-class holdings(db.Model):
+class Holdings(db.Model):
     id = db.Column(db.Integer, primary_key= True)
     ticker_symbol = db.Column(db.String(20))
     number_of_shares = db.Column(db.Integer)
@@ -42,11 +44,10 @@ class holdings(db.Model):
 
 
     def __repr__(self):
-        return '<holdings> ticker_symbol: {}, shares: {}, VWAP: {}'.format(self.ticker_symbol, self.number_of_shares, self.volume_weighted_average_price)
+        return '<holdings> ticker_symbol: {}, number_of_shares: {}, VWAP: {}'.format(self.ticker_symbol, self.number_of_shares, self.volume_weighted_average_price)
 
 
-
-class orders(db.Model):
+class Orders(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     ticker_symbol = db.Column(db.String(20))
     last_price = db.Column(db.Float)
@@ -56,4 +57,4 @@ class orders(db.Model):
 
 
     def __repr__(self):
-        return '<accounts> {}'.format(self.username)
+        return '<orders> ticker: {}, last price: {}, volume: {}, time: {}'.format(self.ticker_symbol, self.last_price, self.trade_volume, self.timestamp)

@@ -4,22 +4,35 @@ import time, sqlite3, requests, json, uuid
 from functools import lru_cache
 from app import app, db
 from flask import render_template, flash, redirect, url_for, request
-from app.forms import LoginForm, RegistrationForm, MarketForm
+from app.forms import LoginForm, RegistrationForm, MarketForm, UpdateEmailForm, UpdatePasswordForm, WithdrawForm, DepositForm
 from random import randint
 from flask_login import current_user, login_user, logout_user, login_required
-from app.alchemy_schema import accounts
+from app.alchemy_schema import Accounts, Holdings, Orders
 from werkzeug.urls import url_parse
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
+
+
+@app.before_request
+def before_request():
+    if current_user.is_authenticated:
+        current_user.last_seen = datetime.utcnow()
+        db.session.commit()
 
 @app.route('/')
-@app.route('/index')
+@app.route('/index/<username>')
 @login_required
 def index():
-    user = {'username': 'Kwasi'}
+   # user = Accounts.query.filter_by(username=current_user).first_404()
     balance = str(get_balance(current_user.id))
-    return render_template('index.html', title='Home', balance = balance)
+   # holdings = [i for i in get_holdings(current_user.id)]
+    holdings =  get_holdings(current_user.id)
+   # ticker_symbol = Holdings.query.filter_by(username=current_user).get(ticker_symbol)
+   # holdings = [
+   #     {'positions': ticker_symbol, 'positions': number_of_shares} ]
+    return render_template('index.html', title='Home', balance = balance, holdings = holdings)
 
 
 @ app.route('/login', methods =['GET', 'POST'])
@@ -28,7 +41,7 @@ def login():
         return redirect(url_for('index'))
     form = LoginForm()
     if form.validate_on_submit():
-        user = accounts.query.filter_by(username=form.username.data).first()
+        user = Accounts.query.filter_by(username=form.username.data).first()
         if user is None or not user.check_password(form.password.data):
             flash('Invalid username or password')
             return redirect(url_for('login'))
@@ -41,7 +54,7 @@ def login():
     print("did not validate")
     return render_template('login.html', title = 'Sign In', form = form)
     global pk
-    pk = current_user.username.id
+    pk == current_user.id
     return pk
 
 @app.route('/logout')
@@ -57,7 +70,7 @@ def register():
         return redirect(url_for('index'))
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = accounts(username = form.username.data, email = form.email.data, password_hash = password.form.data, balance = 100.00, api_key = random.randint(10000, 99000))
+        user = Accounts(username = form.username.data, email = form.email.data, password_hash = password.form.data, balance = 100.00, api_key = random.randint(10000, 99000))
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
@@ -65,22 +78,98 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html', title='Register', form = form)
 
-
+#the purpose of this function is to call the buy function with the input parameters from from.data
 @app.route('/markets', methods = ['GET', 'POST'])
 @login_required
 def markets():
     form = MarketForm()
-    pass
+    if form.validate_on_submit():
+        if form.buy:
+            buy(current_user.id, form.ticker_symbol.data, form.volume.data)
+   # flash('An error has occured. Please try again later.')
+   # return redirect(url_for('markets')
+        if form.sell:
+            sell(current_user.id, form.ticker_symbol.data, form.volume.data)
     return render_template('markets.html',  title ='Markets', form = form)
 
 
+@app.route('/deposit', methods=['GET', 'POST'])
+@login_required
+def deposit():
+    form = DepositForm()
+    if form.validate_on_submit():
+        new_balance = current_user.balance + float(form.deposit.data)
+        current_user.balance = new_balance
+        db.session.commit()
+        flash('Deposit Successful!')
+        return redirect(url_for('index'))
+    flash('An error occured')
+    return render_template('deposit.html', title='Deposit Funds', form = form)
+
+@app.route('/withdraw', methods=['GET', 'POST'])
+@login_required
+def withdraw():
+    form = WithdrawForm()
+    if form.validate_on_submit:
+       # if current_user.balance < 10.00:
+        #You need to figure out how to make it work only with th euser input
+       form.withdraw.data = 10.00
+       if float(form.withdraw.data) > current_user.balance:
+            flash('Cannot complete trasaction due to insufficient funds.')
+            return redirect(url_for('index'))
+       new_balance = current_user.balance - form.withdraw.data
+       current_user.balance = new_balance
+       db.session.commit()
+       flash('Withdraw Succesful!')
+       return redirect(url_for('index'))
+    flash('An error has occured')
+    return render_template('withdraw.html', title ='Withdraw Funds', form=form)
+
+@app.route('/update_email', methods=['GET','POST'])
+@login_required
+def update_email():
+    form = UpdateEmailForm()
+    if form.validate_on_submit():
+        if form.current_email.data != current_user.email:
+            flash('Incorrect current email!')
+        if form.new_email2.data != form.new_email.data:
+            flash('New emails do not match!')
+        current_user.email = form.new_email2.data
+        db.session.commit()
+        flash('Email succesfully updated')
+        return redirct(url_for('index'))
+ #   flash('An error has occure while attempting to update email.')
+#    return redirect(url_for('update_email'))
+    return render_template('update_email.html', title = 'Update Email', form= form)
+
+@app.route('/update_password', methods =['GET', 'POST'])
+@login_required
+def update_password():
+    form = UpdatePasswordForm()
+    if form.validate_on_submit():
+        #The checking of the password hash won't work here. Will prompt error message even upon successful change of password
+        if not check_password_hash(current_user.password_hash, form.current_password.data):
+            flash('This is not your current password')
+        if form.new_password2.data != form.new_password.data:
+            flash('New passwords do not match')
+          #  return redirect(url_for('update_password'))
+        new_pass = current_user.set_password(form.new_password2.data)
+       # db.session.add(new_pass)
+        db.session.commit()
+        flash('Password succesfully updated!')
+        return redirect(url_for('index'))
+   # flash('An error has occured while attempting to update password.')
+  #  return redirect(url_for('update_password'))
+    return render_template('update_password.html', title ='Update Password', form = form)
 
 
 
 def connect():
     global dbname
     dbname = 'webtrader.db'
+    global connection
     connection = sqlite3.connect(dbname)
+    global cursor
     cursor=connection.cursor()
     return connection, cursor
 
@@ -98,7 +187,7 @@ def close(connection, cursor):
 #FINISH THIS GET_PK FUNCTION
 def get_pk():
     connection, cursor = connect()
-    SQL = "SELECT pk FROM accounts WHERE username = ?"
+    SQL = "SELECT pk FROM Accounts WHERE username = ?"
     values  = (username,)
     cursor.excecute(SQL, values)
     answer = cursor.fetchone()
@@ -108,19 +197,18 @@ def get_pk():
     return answer[0]
 
 
-
-
-
+@app.route('/quote', methods=['GET', 'POST'])
 @lru_cache()
 def quote(ticker_symbol):
     endpoint = 'http://dev.markitondemand.com/MODApis/Api/v2/Quote/json?symbol=' + ticker_symbol
     response = requests.get(endpoint).text
     jsondata = json.loads(response)
-    return jsondata.get('LastPrice', None)
+    return jsondata.get('LastPrice')
+
 
 def login(username, password):
     connection, cursor = connect()
-    SQL = "SELECT pk FROM accounts WHERE username = ? AND password = ?"
+    SQL = "SELECT pk FROM Accounts WHERE username = ? AND password = ?"
     values = (username, password)
     cursor.execute(SQL, values)
     testvar = cursor.fetchone()
@@ -133,7 +221,7 @@ def login(username, password):
 
 def get_api(pk):
     connection, cursor = connect()
-    SQL = '''SELECT api_key FROM accounts WHERE pk = ?'''
+    SQL = '''SELECT api_key FROM Accounts WHERE pk = ?'''
     values = (pk,)
     cursor.execute(SQL, values)
     api = cursor.fetchone()
@@ -147,7 +235,7 @@ def get_api(pk):
 
 def get_pk_username(api_key):
     connection, cursor = connect()
-    SQL = ''' SELECT pk, username FROM accounts WHERE api_key = ?'''
+    SQL = ''' SELECT pk, username FROM Accounts WHERE api_key = ?'''
     values = (api_key,)
     cursor.execute(SQL, values)
     pk_username = cursor.fetchone()
@@ -163,7 +251,7 @@ def save_create_account(username, password, balance):
     connection, cursor = connect()
     funds = balance
     api_key = random.randint(10000, 99000)
-    SQL2 = '''INSERT INTO accounts (username, password, balance, api_key) VALUES(?, ?, ?, ?)'''
+    SQL2 = '''INSERT INTO Accounts (username, password, balance, api_key) VALUES(?, ?, ?, ?)'''
     values2 = (username, password, funds, api_key)
     cursor.execute(SQL2, values2)
     close(connection, cursor)
@@ -173,7 +261,7 @@ def save_create_account(username, password, balance):
 
 def get_accounts():
     connection, cursor = connect()
-    SQL = '''SELECT pk, username, password, balance, api_key FROM accounts'''
+    SQL = '''SELECT pk, username, password, balance, api_key FROM Accounts'''
     cursor.execute(SQL)
     accounts = cursor.fetchall()
     accounts_list = []
@@ -187,7 +275,7 @@ def get_accounts():
 
 def get_balance(pk):
    connection, cursor = connect()
-   sql = "SELECT balance FROM accounts WHERE id = ?"
+   sql = "SELECT balance FROM Accounts WHERE id = ?"
    cursor.execute(sql, (pk,))
    balance = cursor.fetchone()
    close(connection, cursor)
@@ -197,6 +285,18 @@ def get_balance(pk):
        return balance[0]
 
 
+#create a holdings form
+#create a function that calls the get_holdings function with the current_user.id
+app.route('/call_get_holdings', methods =['GET', 'POST'])
+@login_required
+def call_get_holdings():
+    form = HoldingsForm()
+    get_holdings(current_user.id)
+    return render_template('holdings.html', title = 'Holdings', form = form)
+
+
+
+
 @app.route('/holdings', methods= ['GET', 'POST'])
 @login_required
 def get_holdings(pk):
@@ -204,7 +304,7 @@ def get_holdings(pk):
     if pk == 1:
         input_vwap_TSLA(pk, 'TSLA')
         input_vwap_AAPL(pk, 'AAPL')
-    SQL = "SELECT ticker_symbol, number_of_shares, volume_weighted_average_price FROM holdings WHERE account_pk = ?"
+    SQL = "SELECT ticker_symbol, number_of_shares, volume_weighted_average_price FROM Holdings WHERE account_pk = ?"
     values = (pk,)
     cursor.execute(SQL, values)
     testvar2 = cursor.fetchall()
@@ -216,13 +316,17 @@ def get_holdings(pk):
             "number_of_shares":row[1],
             'volume_weighted_average_price': row[2]
         }
-        result.append(dic)
-    return result
+        result.append(dict)
+        #result.append(row)
+    return testvar2
+   # return result
+    #return row
+
 
 def get_holding(pk, ticker_symbol):
     connection, cursor = connect()
     sql = '''SELECT number_of_shares
- FROM holdings WHERE account_pk = ? and ticker_symbol = ?'''
+ FROM Holdings WHERE account_pk = ? and ticker_symbol = ?'''
     values = (pk, ticker_symbol.upper())
     cursor.execute(sql,values)
     holding = cursor.fetchall()
@@ -233,7 +337,7 @@ def get_holding(pk, ticker_symbol):
             return None
         else:
            return i[0]
-@app.route('/orderss', methods = ['GET', 'POST'])
+@app.route('/orders', methods = ['GET', 'POST'])
 @login_required
 def get_orders(pk, ticker_symbol, cutoff = '1970-01-01'):
     connection, cursor = connect()
@@ -257,12 +361,12 @@ def get_orders(pk, ticker_symbol, cutoff = '1970-01-01'):
 
 def create_holding(account_pk, ticker_symbol, number_of_shares, price):
     connection, cursor = connect()
-    SQL = '''INSERT INTO holdings (account_pk, ticker_symbol, number_of_shares, volume_weighted_average_price)
+    SQL = '''INSERT INTO Holdings (account_pk, ticker_symbol, number_of_shares, volume_weighted_average_price)
 VALUES (?, ?, ?, ?)'''
     values = (account_pk, ticker_symbol.upper(), number_of_shares, create_vwap(account_pk, ticker_symbol, number_of_shares, price))
     cursor.execute(SQL, values)
     close( connection, cursor)
-    return True 
+    return True
 
 def get_price(account_pk, ticker_symbol):
     SQL = '''SELECT last_price FROM orders WHERE account_pk = ? AND ticker_symbol =?'''
@@ -284,7 +388,7 @@ def get_trade_volume(account_pk, ticker_symbol):
 
 def select_all_tickers(account_pk):
     connection, cursor = connect()
-    SQL = '''SELECT ticker_symbol FROM holdings WHERE account_pk = ?'''
+    SQL = '''SELECT ticker_symbol FROM Holdings WHERE account_pk = ?'''
     values = (account_pk,)
     cursor.execute(SQL, values)
     all_tickers = cursor.fetchall()
@@ -308,7 +412,7 @@ AND ticker_symbol = ?'''
             sum_buys_trade_volume += (float(i[0]) *float(i[1]))
             sum_trade_volume += float(i[1])
     vwap = (sum_buys_trade_volume/sum_trade_volume)
-    SQL_input = '''UPDATE holdings SET volume_weighted_average_price = ?
+    SQL_input = '''UPDATE Holdings SET volume_weighted_average_price = ?
  WHERE account_pk = ? AND ticker_symbol = ?'''
     values_input = (vwap, account_pk, 'TSLA')
     cursor.execute(SQL_input, values_input)
@@ -329,7 +433,7 @@ AND ticker_symbol = ?'''
             sum_buys_trade_volume += (float(i[0]) *float(i[1]))
             sum_trade_volume += float(i[1])
     vwap = (sum_buys_trade_volume/sum_trade_volume)
-    SQL_input = '''UPDATE holdings SET volume_weighted_average_price = ?
+    SQL_input = '''UPDATE Holdings SET volume_weighted_average_price = ?
  WHERE account_pk = ? AND ticker_symbol = ?'''
     values_input = (vwap, account_pk, 'AAPL')
     cursor.execute(SQL_input, values_input)
@@ -385,7 +489,7 @@ def TWAP(ticker_symbol):
 
 def modify_holding(account_pk, ticker_symbol, number_of_shares):
     connection, cursor = connect()
-    SQL = '''UPDATE holdings SET number_of_shares = ?, volume_weighted_average_price =?
+    SQL = '''UPDATE Holdings SET number_of_shares = ?, volume_weighted_average_price =?
 WHERE ticker_symbol = ? AND  account_pk = ?'''
     values = (number_of_shares, modify_vwap(account_pk, ticker_symbol, number_of_shares), ticker_symbol, account_pk)
     cursor.execute(SQL, values)
@@ -394,7 +498,7 @@ WHERE ticker_symbol = ? AND  account_pk = ?'''
 
 def modify_holding_api(api_key, ticker_symbol, number_of_shares):
     connection, cursor = connect()
-    SQL = '''UPDATE holdings SET number_of_shares = ?, volume_weighted_average_price =?
+    SQL = '''UPDATE Holdings SET number_of_shares = ?, volume_weighted_average_price =?
 WHERE ticker_symbol = ? AND  api_key = ?'''
     values = (number_of_shares, modify_vwap_api(api_key, ticker_symbol, number_of_shares), ticker_symbol, api_key)
     cursor.execute(SQL, values)
@@ -403,14 +507,14 @@ WHERE ticker_symbol = ? AND  api_key = ?'''
 
 def modify_balance(account_pk, new_amount):
     connection, cursor = connect()
-    SQL = '''UPDATE accounts SET balance = ? WHERE id = ?'''
+    SQL = '''UPDATE Accounts SET balance = ? WHERE id = ?'''
     cursor.execute(SQL,(new_amount, account_pk))
     close(connection, cursor)
 
 
 def modify_balance_api(api_key, new_amount):
     connection, cursor = connect()
-    SQL = '''UPDATE accounts SET balance = ? WHERE api_key = ?'''
+    SQL = '''UPDATE Accounts SET balance = ? WHERE api_key = ?'''
     cursor.execute(SQL,(new_amount, api_key))
     close(connection, cursor)
 
@@ -436,28 +540,30 @@ def create_order_api(api_key, ticker_symbol, trade_volume, last_price):
 @app.route('/buy', methods=['GET', 'POST'])
 @login_required
 def buy(account_pk, ticker_symbol, volume):
-   holding = get_holding(account_pk, ticker_symbol.upper())
-   stock_price = quote(ticker_symbol.upper())
-   if get_balance(account_pk) > (stock_price * volume):
-       if holding != None:
-           new_holding = holding + volume
-           modify_holding(account_pk, ticker_symbol.upper(), new_holding, stock_price)
-       else:
-           create_holding(account_pk, ticker_symbol.upper(), volume, stock_price)
-
-       new_balance = get_balance(account_pk) - (stock_price *volume)
-       modify_balance(account_pk, new_balance)
-       create_order(account_pk, ticker_symbol.upper(), volume, stock_price)
-       return True
-   else:
-       return False
+    holding = get_holding(account_pk, ticker_symbol.upper())
+    stock_price = quote(ticker_symbol.upper())
+    if get_balance(account_pk) > (float(stock_price) * float(volume)):
+        if holding != None:
+            new_holding = holding + float(volume)
+            modify_holding(account_pk, ticker_symbol.upper(), new_holding)
+        else:
+            create_holding(account_pk, ticker_symbol.upper(), float(volume), float(stock_price))
+        new_balance = get_balance(account_pk) - (float(stock_price) * float(volume))
+        modify_balance(account_pk, new_balance)
+        create_order(account_pk, ticker_symbol.upper(), volume, stock_price)
+        return True
+    else:
+        flash('Transaction Succesful!')
+        return redirect(url_for('index'))
+    #flash('Transaction Failed!')
+    return redirect(url_for('markets'))
 
 
 def buy_api(api_key):
    api_key = api_key
    holding = get_holding_api(api_key, ticker_symbol.upper())
    stock_price = quote(ticker_symbol.upper())
-   if get_balance_api(api_key) > (stock_price * volume):
+   if get_balance_api(api_key) > (float(stock_price) * float(volume)):
        if holding != None:
            new_holding = holding + volume
            modify_holding_api(api_key, ticker_symbol.upper(), new_holding, stock_price)
@@ -481,20 +587,26 @@ def sell(account_pk, ticker_symbol, number_of_shares):
     #Does my holding have enough shares
     number_of_current_shares = get_holding(account_pk, ticker_symbol.upper())
     if number_of_current_shares == None:
+        flash('Transaction Falied. You have no shares to sell.')
+        return redirect(url_for('index'))
         return False
-    elif number_of_current_shares < number_of_shares:
+    elif number_of_current_shares < int(number_of_shares):
+        flash('You do not have enough shares to complete the transaction')
+        return redirect(url_for('markets'))
         return False
     else:
         #What is the share price?
         last_price = quote(ticker_symbol)
         #Calculate Remaining number of shares
-        new_number_of_shares = get_holding(account_pk, ticker_symbol) - number_of_shares
+        new_number_of_shares = get_holding(account_pk, ticker_symbol) - int(number_of_shares)
         #Modify our Holdings
         modify_holding(account_pk, ticker_symbol, new_number_of_shares)
         #Modify Balance
-        new_amount = get_balance(account_pk) + float(number_of_shares * last_price)
+        new_amount = get_balance(account_pk) + (float(number_of_shares) * last_price)
         modify_balance(account_pk, new_amount)
         #Create Order
-        create_order(account_pk, ticker_symbol, number_of_shares, last_price)
+        create_order(account_pk, ticker_symbol, int(number_of_shares), last_price)
         #Return True
+        flash('Transaction succesful!')
+        return redirect(url_for('index'))
         return True

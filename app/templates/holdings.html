@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Holdings</h1>
+    {% for holding in holdings %}
+    <div><p>Your current holdings include: {{ current_user.holdings }} </div></p>
+    {% endfor %}
+{% endblock %}

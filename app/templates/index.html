@@ -2,8 +2,16 @@
 
 {% block content %}
     <h1>Hi, {{ current_user.username }}!</h1>
-    <div><p>Your current balance is: {{ balance }}</div></p>
-    {% for holding in holdings %}
-    <div><p>Your current holdings include: {{ holdings.account_pk.ticker_symbol }}{{ holdings.account_pk.number_of_shares }}</div></p>
+    <div><p>Your current balance is: {{ current_user.balance }}</div></p>
+    <div><p>Your current holdings include:</div></p>
+    {% for i in holdings %}
+    <p> {{ i }} </p>
     {% endfor %}
+    <div><p>Ticker Symbol:{{ holdings[0][0] }} Number of Shares: {{ holdings[0][1] }} VWAP {{ holdings[0][2] }}</div></p>
+    <div>Settings
+        <p><a href="{{ url_for('deposit') }}">Deposit Funds</a></p>
+        <p><a href="{{ url_for('withdraw') }}">Withdraw Funds</a></p>
+        <p><a href="{{ url_for('update_email') }}">Update Email</a></p>  
+        <p><a href="{{ url_for('update_password') }}">Update Password</a></p>
+    </div>
 {% endblock %}

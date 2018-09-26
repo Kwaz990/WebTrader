@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Deposit Funds</h1>
+        <form action ="" method="post">
+            {{ form.hidden_tag() }}
+           <div><p>Current balance: {{ current_user.balance }}</div></p>
+            <p>
+                {{ form.deposit.label }}<br>
+                {{ form.deposit(size=32) }}<br>
+                {% for error in form.deposit.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+                {% endfor %}
+            </p>
+            <p>
+                {{ form.bank_address.label }}<br>
+                {{ form.bank_address(size=32) }}<br>
+                {% for error in form.bank_address.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+                {% endfor %}
+            </p>
+            <p>
+                {{ form.submit() }}
+            </p>
+        </form>
+{% endblock %}
+
+
