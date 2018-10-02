@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1> Settings </h1>
+    <form action="" method="post">
+    {{ form.hidden_tag() }}
+        <p><a href="{{ url_for('deposit') }}">Deposit Funds</a></p>
+        <p><a href="{{ url_for('withdraw') }}"> Withdraw Funds</a></p>
+        <p><a href="{{ url_for('update_email') }}">Update Email</a></p>
+        <p><a href="{{ url_for('update_password') }}">Update Password</a></p>
+{% endblock %}
+

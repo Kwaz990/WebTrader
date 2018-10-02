@@ -4,7 +4,7 @@ import time, sqlite3, requests, json, uuid
 from functools import lru_cache
 from app import app, db
 from flask import render_template, flash, redirect, url_for, request
-from app.forms import LoginForm, RegistrationForm, MarketForm, UpdateEmailForm, UpdatePasswordForm, WithdrawForm, DepositForm
+from app.forms import LoginForm, RegistrationForm, MarketForm, UpdateEmailForm, UpdatePasswordForm, WithdrawForm, DepositForm, SettingsForm, OrdersForm, HoldingsForm
 from random import randint
 from flask_login import current_user, login_user, logout_user, login_required
 from app.alchemy_schema import Accounts, Holdings, Orders
@@ -20,6 +20,8 @@ def before_request():
     if current_user.is_authenticated:
         current_user.last_seen = datetime.utcnow()
         db.session.commit()
+        global pk
+        pk = current_user.id
 
 @app.route('/')
 @app.route('/index/<username>')
@@ -35,7 +37,16 @@ def index():
     return render_template('index.html', title='Home', balance = balance, holdings = holdings)
 
 
-@ app.route('/login', methods =['GET', 'POST'])
+
+@app.route('/settings')
+@login_required
+def settings():
+    form = SettingsForm()
+    return render_template('settings.html', title='Settings', form = form)
+
+
+
+@app.route('/login', methods =['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -53,9 +64,9 @@ def login():
         return redirect(url_for('index'))
     print("did not validate")
     return render_template('login.html', title = 'Sign In', form = form)
-    global pk
-    pk == current_user.id
-    return pk
+   # global pk
+   # pk == current_user.id
+   # return pk
 
 @app.route('/logout')
 def logout():
@@ -291,10 +302,9 @@ app.route('/call_get_holdings', methods =['GET', 'POST'])
 @login_required
 def call_get_holdings():
     form = HoldingsForm()
-    get_holdings(current_user.id)
-    return render_template('holdings.html', title = 'Holdings', form = form)
-
-
+    pk = current_user.id
+    holdings = get_holdings(pk)
+    return render_template('holdings.html', title = 'Holdings', form = form, holdings = holdings)
 
 
 @app.route('/holdings', methods= ['GET', 'POST'])
@@ -337,13 +347,31 @@ def get_holding(pk, ticker_symbol):
             return None
         else:
            return i[0]
+
+
+@app.route('/orders_specific/<ticker_symbol>', methods=['GET', 'POST'])
+@login_required
+def orders_specific():
+    pass
+
+
+
 @app.route('/orders', methods = ['GET', 'POST'])
 @login_required
+def call_orders():
+    form = OrdersForm()
+    if form.validate_on_submit():
+        result = get_orders(current_user.id, form.ticker_symbol.data)
+        return result
+    return render_template('orders.html', title = 'Order History', form = form)
+
+
 def get_orders(pk, ticker_symbol, cutoff = '1970-01-01'):
     connection, cursor = connect()
-    SQL = '''SELECT ticker_symbol,last_price, trade_volume, timestamp FROM
- orders WHERE account_pk = ? AND ticker_symbol = ? AND timestamp >= ?;'''
-    cutoff_convert = int(time.mktime(datetime.datetime.strptime(cutoff, "%Y-%m-%d").timetuple()))
+    SQL = '''SELECT ticker_symbol, last_price, trade_volume, timestamp FROM
+ Orders WHERE account_pk = ? AND ticker_symbol = ? AND timestamp >= ?;'''
+    # for the cutoff_convert datetime.datetime was changed to datetime.
+    cutoff_convert = int(time.mktime(datetime.strptime(cutoff, "%Y-%m-%d").timetuple()))
     values = (pk, ticker_symbol, cutoff_convert) #cutoff should be a string in yyyy-mm-dd format
     cursor.execute(SQL, values)
     lst = []
@@ -351,13 +379,13 @@ def get_orders(pk, ticker_symbol, cutoff = '1970-01-01'):
     close(connection, cursor)
     for i in rows:
         d = {
-        'ticker_symbol': i[0],
-        'last_price': i[1],
-        'trade_volume': i[2],
-        'timestamp': '{}'.format(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(i[3]))))}
-        lst.append(d)
-    return lst
-
+            'ticker_symbol': i[0],
+            'last_price': i[1],
+            'trade_volume': i[2],
+            'timestamp': '{}'.format(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(i[3]))))}
+    lst.append(d)
+    return str(lst)
+    #return tuple(rows)
 
 def create_holding(account_pk, ticker_symbol, number_of_shares, price):
     connection, cursor = connect()
@@ -369,7 +397,7 @@ VALUES (?, ?, ?, ?)'''
     return True
 
 def get_price(account_pk, ticker_symbol):
-    SQL = '''SELECT last_price FROM orders WHERE account_pk = ? AND ticker_symbol =?'''
+    SQL = '''SELECT last_price FROM Orders WHERE account_pk = ? AND ticker_symbol =?'''
     values = (account_pk, ticker_symbol)
     cursor.execute(SQL, values)
     prices = cursor.fetchall()
@@ -380,7 +408,7 @@ def get_price(account_pk, ticker_symbol):
 
 def get_trade_volume(account_pk, ticker_symbol):
     connection, cursor = connect()
-    SQL = '''SELECT trade_volume FROM orders WEHRE account_pk =? AND ticker_symbol = ?'''
+    SQL = '''SELECT trade_volume FROM Orders WEHRE account_pk =? AND ticker_symbol = ?'''
     values = (account_pk, ticker_symbol)
     cursor.execute(SQL, values)
     close(connection, cursor)
@@ -400,7 +428,7 @@ def select_all_tickers(account_pk):
 
 def input_vwap_TSLA(account_pk, ticker_symbol):
     connection, cursor = connect()
-    SQL = '''SELECT last_price, trade_volume FROM orders WHERE account_pk = ?
+    SQL = '''SELECT last_price, trade_volume FROM Orders WHERE account_pk = ?
 AND ticker_symbol = ?'''
     values = (account_pk, ticker_symbol)
     cursor.execute(SQL, values)
@@ -421,7 +449,7 @@ AND ticker_symbol = ?'''
 
 def input_vwap_AAPL(account_pk, ticker_symbol):
     connection, cursor = connect()
-    SQL = '''SELECT last_price, trade_volume FROM orders WHERE account_pk = ?
+    SQL = '''SELECT last_price, trade_volume FROM Orders WHERE account_pk = ?
 AND ticker_symbol = ?'''
     values = (account_pk, ticker_symbol)
     cursor.execute(SQL, values)
@@ -457,7 +485,7 @@ def modify_vwap(account_pk, ticker_symbol, number_of_shares):
     #jsondata = json.loads(response)
     price = get_price(account_pk, ticker_symbol)
     #total_market_volume = jsondata.get('Volume', None)
-    SQL = '''SELECT last_price, trade_volume From orders WHERE account_pk = ?
+    SQL = '''SELECT last_price, trade_volume From Orders WHERE account_pk = ?
 AND ticker_symbol = ?'''
     values = (account_pk, ticker_symbol)
     cursor.execute(SQL, values)
@@ -522,7 +550,7 @@ def modify_balance_api(api_key, new_amount):
 
 def create_order(account_pk, ticker_symbol, trade_volume, last_price):
     connection, cursor = connect()
-    SQL = '''INSERT INTO orders (account_pk, ticker_symbol, last_price, trade_volume, timestamp)
+    SQL = '''INSERT INTO Orders (account_pk, ticker_symbol, last_price, trade_volume, timestamp)
             VALUES (?, ?, ?, ?, ?)'''
     values = (account_pk, ticker_symbol.upper(), last_price, trade_volume, int(time.time()))
     cursor.execute(SQL,values)
@@ -530,7 +558,7 @@ def create_order(account_pk, ticker_symbol, trade_volume, last_price):
 
 
 def create_order_api(api_key, ticker_symbol, trade_volume, last_price):
-    SQL = '''INSERT INTO orders (api_key, ticker_symbol, last_price, trade_volume, timestamp)
+    SQL = '''INSERT INTO Orders (api_key, ticker_symbol, last_price, trade_volume, timestamp)
             VALUES (?, ?, ?, ?, ?)'''
     values = (api_key, ticker_symbol.upper(), last_price, trade_volume, int(time.time()))
     cursor.execute(SQL,values)

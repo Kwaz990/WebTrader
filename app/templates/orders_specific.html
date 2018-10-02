@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Holdings</h1>
+    <h1>Order History for {{ form.orders.ticker_symbol.data }}</h1>
     <form action="" method="post">
         {{ form.hidden_tag() }}
-        {% for holding in holdings %}
-        <div><p>Your current holdings include: {{ holding }} </div></p>
+        {% for i in orders %}
+        {{ i }}
         {% endfor %}
-    </form>
+     </form>
 {% endblock %}

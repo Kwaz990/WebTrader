@@ -34,7 +34,7 @@ class RegistrationForm(FlaskForm):
 class MarketForm(FlaskForm):
     ticker_symbol = StringField('Ticker Symbol', validators = [DataRequired()])
     volume = StringField('Number of Shares', validators = [DataRequired()])
-    price = StringField('Price per Share', validators = [DataRequired()])
+    price = StringField('Price per Share (Leave Blank for Market Buy)')
     buy = BooleanField('Buy')
     sell = BooleanField('Sell')
     submit = SubmitField('Execute')
@@ -84,4 +84,13 @@ class UpdatePasswordForm(FlaskForm):
 
 
 class HoldingsForm(FlaskForm):
+    pass
+
+
+class OrdersForm(FlaskForm):
+    ticker_symbol = StringField('Ticker Symbol', validators = [DataRequired()])
+    submit = SubmitField('Submit')
+
+
+class SettingsForm(FlaskForm):
     pass

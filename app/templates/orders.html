@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Order History</h1>
+    <form action="" method="post">
+        {{ form.hidden_tag() }}
+        <p>Enter the ticker symbol of the stock you'd like your order history of</p>
+        <p>
+            {{ form.ticker_symbol.label }}<br>
+            {{ form.ticker_symbol(size=32) }}<br>
+            {% for error in form.ticker_symbol.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>{{ form.submit() }}</p>
+    </form>
+    {% for i in result %}
+    <p>
+        {{ i }}
+    </p>
+    {% endfor %}
+{% endblock %}
