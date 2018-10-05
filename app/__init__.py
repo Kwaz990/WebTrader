@@ -3,9 +3,10 @@ from config import Config
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
-from app import model, alchemy_schema, errors
 import logging
-from logging.halders import SMTPHandler
+from logging.handlers import SMTPHandler, RotatingFileHandler
+import os
+
 
 
 
@@ -36,13 +37,14 @@ if not app.debug:
         app.logger.addHandler(mail_handler)
     if not os.path.exists('logs'):
         os.mkdir('logs')
-    file_handler = RotatingFIleHandler('logs/webtrader.log', maxBytes=10240,
+    file_handler = RotatingFileHandler('logs/webtrader.log', maxBytes=10240,
                                        backupCount=10)
     file_handler.setFormatter(logging.INFO)
     app.logger.addHandler(file_handler)
 
     app.logger.setLevel(logging.INFO)
-    app.logger.info('Webtrder Startup')
+    app.logger.info('Webtrader Startup')
 
 
-from app import model, alchemy_schema
+
+from app import model, alchemy_schema, errors
