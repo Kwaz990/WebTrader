@@ -2,9 +2,9 @@
 
 {% block content %}
     <h1>Order History</h1>
-    <form action="" method="post">
+    <form action="{{ url_for('orders_specific') }}" method="post">
         {{ form.hidden_tag() }}
-        <p>Enter the ticker symbol of the stock you'd like your order history of</p>
+        <p>Enter ticker symbol to display order history</p>
         <p>
             {{ form.ticker_symbol.label }}<br>
             {{ form.ticker_symbol(size=32) }}<br>
@@ -14,9 +14,4 @@
         </p>
         <p>{{ form.submit() }}</p>
     </form>
-    {% for i in result %}
-    <p>
-        {{ i }}
-    </p>
-    {% endfor %}
 {% endblock %}

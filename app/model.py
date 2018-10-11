@@ -3,7 +3,7 @@
 import time, sqlite3, requests, json, uuid
 from functools import lru_cache
 from app import app, db
-from flask import render_template, flash, redirect, url_for, request
+from flask import render_template, flash, redirect, url_for, request, jsonify, json
 from app.forms import LoginForm, RegistrationForm, MarketForm, UpdateEmailForm, UpdatePasswordForm, WithdrawForm, DepositForm, SettingsForm, OrdersForm, HoldingsForm
 from random import randint
 from flask_login import current_user, login_user, logout_user, login_required
@@ -295,20 +295,29 @@ def get_balance(pk):
    else:
        return balance[0]
 
+# must create holdings_specific html page
+@app.route('/holdings_specific/<ticker_symbol>', methods = ['GET', 'POST'])
+@login_required
+def holdings_specific(ticker_symbol):
+  #  ticker_symbol = request.form['ticker_symbol']
+    holding = get_holding(current_user.id, ticker_symbol)
+    return render_template('holdings_specific.html', title= 'Specific Holdings', holding = holding)
+
 
 #create a holdings form
 #create a function that calls the get_holdings function with the current_user.id
-app.route('/call_get_holdings', methods =['GET', 'POST'])
+@app.route('/call_get_holdings', methods =['GET', 'POST'])
 @login_required
 def call_get_holdings():
     form = HoldingsForm()
-    pk = current_user.id
-    holdings = get_holdings(pk)
-    return render_template('holdings.html', title = 'Holdings', form = form, holdings = holdings)
+    if form.validate_on_submit():
+        ticker_symbol = form.ticker_symbol.data
+        return redirect(url_for('holdings_specific', ticker_symbol=ticker_symbol))
+   # holdings = get_holdings(current_user.id)
+    return render_template('holdings.html', title = 'Holdings', form = form)
 
 
-@app.route('/holdings', methods= ['GET', 'POST'])
-@login_required
+
 def get_holdings(pk):
     connection, cursor = connect()
     if pk == 1:
@@ -326,7 +335,7 @@ def get_holdings(pk):
             "number_of_shares":row[1],
             'volume_weighted_average_price': row[2]
         }
-        result.append(dict)
+        result.append(dic)
         #result.append(row)
     return testvar2
    # return result
@@ -349,10 +358,16 @@ def get_holding(pk, ticker_symbol):
            return i[0]
 
 
-@app.route('/orders_specific/<ticker_symbol>', methods=['GET', 'POST'])
+@app.route('/orders_specific', methods=['GET', 'POST'])
 @login_required
 def orders_specific():
-    pass
+    if request.method == 'POST':
+        ticker_symbol = request.form['ticker_symbol']
+        #print(ticker_symbol)
+        orders = get_orders(current_user.id, ticker_symbol)
+       # result = request.form
+   # return orders
+        return render_template('orders_specific.html', title = 'Specific Order History', orders = orders)
 
 
 
@@ -361,8 +376,11 @@ def orders_specific():
 def call_orders():
     form = OrdersForm()
     if form.validate_on_submit():
-        result = get_orders(current_user.id, form.ticker_symbol.data)
-        return result
+        ticker = str(form.ticker_symbol.data)
+        orders_specific(ticker)
+       # result = get_orders(current_user.id, form.ticker_symbol.data)
+        return redirect('orders_specific')
+      #  return result
     return render_template('orders.html', title = 'Order History', form = form)
 
 
@@ -378,13 +396,17 @@ def get_orders(pk, ticker_symbol, cutoff = '1970-01-01'):
     rows = cursor.fetchall() #What data structure does rows return as? a list, or dict?
     close(connection, cursor)
     for i in rows:
+        if rows == None:
+            return None
         d = {
-            'ticker_symbol': i[0],
-            'last_price': i[1],
-            'trade_volume': i[2],
-            'timestamp': '{}'.format(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(i[3]))))}
-    lst.append(d)
-    return str(lst)
+        'ticker_symbol': i[0],
+        'last_price': i[1],
+        'trade_volume': i[2],
+        'timestamp': '{}'.format(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(i[3]))))}
+        lst.append(d)
+   # return d
+ #   return rows
+    return lst
     #return tuple(rows)
 
 def create_holding(account_pk, ticker_symbol, number_of_shares, price):

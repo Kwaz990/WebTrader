@@ -1,11 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Order History for {{ form.orders.ticker_symbol.data }}</h1>
-    <form action="" method="post">
-        {{ form.hidden_tag() }}
-        {% for i in orders %}
-        {{ i }}
-        {% endfor %}
-     </form>
+    <h1>Order History for {{ current_user.orders.ticker_symbol }}</h1>
+    <form action="" method="get">
+        <p>
+            {% for dict_item in orders %}
+                {% for key, value in dict_item.items() %}
+                <h2>{{ key }}: {{value}} </h2>
+                {% endfor %}
+            {% endfor %}
+        </p>
+        <p>
+            {{ orders }}
+        </p>
+    </form>
 {% endblock %}

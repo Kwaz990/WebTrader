@@ -2,10 +2,16 @@
 
 {% block content %}
     <h1>Holdings</h1>
-    <form action="" method="post">
+    <form action="{{ url_for('holdings_specific', ticker_symbol=ticker_symbol) }}" method="post">
         {{ form.hidden_tag() }}
-        {% for holding in holdings %}
-        <div><p>Your current holdings include: {{ holding }} </div></p>
-        {% endfor %}
+        <p> Enter ticker symbol to display holdings </p>
+        <p>
+            {{ form.ticker_symbol.label }}<br>
+            {{ form.ticker_symbol(size=32) }}<br>
+            {% for error in form.ticker_symbol.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p> {{ form.submit() }} </p>
     </form>
 {% endblock %}

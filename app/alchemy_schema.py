@@ -22,6 +22,7 @@ class Accounts(UserMixin, db.Model):
     api_key = db.Column(db.Integer)
     holdings = db.relationship('Holdings', backref='positions', lazy ='dynamic')
     orders = db.relationship('Orders', backref='order_history', lazy='dynamic')
+    watchlist = db.relationship('Watchlist', backref = 'watchlist', lazy = 'dynamic')
 #    buy = db.relationship('buy', backref='buy', lazy = 'dynamic')
 #    sell = db.relationship('sell', backref='sell', lazy = 'dynamic')
 
@@ -58,3 +59,11 @@ class Orders(db.Model):
 
     def __repr__(self):
         return '<orders> ticker: {}, last price: {}, volume: {}, time: {}'.format(self.ticker_symbol, self.last_price, self.trade_volume, self.timestamp)
+
+class Watchlist(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    ticker_symbol = db.Column(db.String(20))
+    account_pk = db.Column(db.Integer, db.ForeignKey('accounts.id'))
+
+    def __repr__(self):
+        return '<watchlist> userID: {}, ticker: {}'.format(self.account_pk, self.ticker_symbol)

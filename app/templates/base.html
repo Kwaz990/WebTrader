@@ -11,7 +11,7 @@
             Webtrader: 
             <a href="{{ url_for('index') }}">Home</a>
             <a href="{{ url_for('markets') }}">Markets</a>
-            <a href="{{ url_for('get_holdings') }}">Holdings</a>
+            <a href="{{ url_for('call_get_holdings') }}">Holdings</a>
             <a href="{{ url_for('call_orders') }}">Order History</a>
             <a href="{{ url_for('settings') }}">Settings</a>
             {% if current_user.is_anonymous %}

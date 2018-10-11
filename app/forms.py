@@ -84,7 +84,8 @@ class UpdatePasswordForm(FlaskForm):
 
 
 class HoldingsForm(FlaskForm):
-    pass
+    ticker_symbol = StringField('Ticker Symbol', validators = [DataRequired()])
+    submit = SubmitField('Submit')
 
 
 class OrdersForm(FlaskForm):

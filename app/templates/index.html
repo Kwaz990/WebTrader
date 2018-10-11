@@ -6,7 +6,18 @@
     <p></p>
     <p></p>
     <div><b><p>Holdings Overview:</div><b></p>
+    <table class = "table">
+        <tr class = "labels">
+            <td> Ticker Symbol </td>
+            <td> Number of Shares </td>
+            <td> VWAP? </td>
+        </tr>
     {% for i in holdings %}
-    <p> {{ i }} </p>
+        <tr>
+            <td> {{ i[0] }} </td>
+            <td> {{ i[1] }} </td>
+            <td> {{ i[2] }} </td>
+        </tr>
     {% endfor %}
+    </table>
 {% endblock %}
