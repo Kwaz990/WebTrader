@@ -320,9 +320,9 @@ def call_get_holdings():
 #TO DO remove the automatic Vwap for user with pk 1
 def get_holdings(pk):
     connection, cursor = connect()
-    if pk == 1:
-        input_vwap_TSLA(pk, 'TSLA')
-        input_vwap_AAPL(pk, 'AAPL')
+    # if pk == 1:
+    #     input_vwap_TSLA(pk, 'TSLA')
+    #     input_vwap_AAPL(pk, 'AAPL')
     SQL = "SELECT ticker_symbol, number_of_shares, weighted_average_price, price_per_loss_open, price_per_loss_percent, last_price, volume_weighted_average_price FROM Holdings WHERE account_pk = ?"
     values = (pk,)
     cursor.execute(SQL, values)
@@ -346,10 +346,36 @@ def get_holdings(pk):
     #return row
 
 
+def weighted_average_price():
+    connection, cursor = connect()
+    sql = '''SELECT trade_volume, last_price FROM Orders WHERE pk = ?, ticker_symbol = ?'''
+    values = (pk, ticker_symbol)
+    cursor.execute(sql, values)
+    volume_and_price = cursor.fetchall()
+    lst = []
+    total_shares = 0
+    close(connection, cursor)
+    for i in volume_and_price:
+        for _ in i:
+            vol = _[0]
+            price = _[1]
+            total_shares += vol
+        lst.append([vol*price])
+    weight = sum(lst)
+    weighted_average = weight/total_shares
+    sql_input = '''UPDATE Holdings SET weighted_average_price = ? WHERE pk = ? '''
+    input_values = (weighted_average, pk)
+    cursor.execute()
+    close(connnection, cursor)
+
+
+
+
+
+
 def get_holding(pk, ticker_symbol):
     connection, cursor = connect()
-    sql = '''SELECT number_of_shares
- FROM Holdings WHERE account_pk = ? and ticker_symbol = ?'''
+    sql = '''SELECT number_of_shares FROM Holdings WHERE account_pk = ? and ticker_symbol = ?'''
     values = (pk, ticker_symbol.upper())
     cursor.execute(sql,values)
     holding = cursor.fetchall()
@@ -452,55 +478,52 @@ def select_all_tickers(account_pk):
         ticker_list.append(i)
     return ticker_list
 
-def input_vwap_TSLA(account_pk, ticker_symbol):
-    connection, cursor = connect()
-    SQL = '''SELECT last_price, trade_volume FROM Orders WHERE account_pk = ?
-AND ticker_symbol = ?'''
-    values = (account_pk, ticker_symbol)
-    cursor.execute(SQL, values)
-    price_volume = cursor.fetchall()
-    sum_buys_trade_volume = 0
-    sum_trade_volume = 0
-    for i in price_volume:
-        if float(i[0]) > 0:
-            sum_buys_trade_volume += (float(i[0]) *float(i[1]))
-            sum_trade_volume += float(i[1])
-    vwap = (sum_buys_trade_volume/sum_trade_volume)
-    SQL_input = '''UPDATE Holdings SET volume_weighted_average_price = ?
- WHERE account_pk = ? AND ticker_symbol = ?'''
-    values_input = (vwap, account_pk, 'TSLA')
-    cursor.execute(SQL_input, values_input)
-    close(connection, cursor)
+# def input_vwap_TSLA(account_pk, ticker_symbol):
+#     connection, cursor = connect()
+#     SQL = '''SELECT last_price, trade_volume FROM Orders WHERE account_pk = ?
+# AND ticker_symbol = ?'''
+#     values = (account_pk, ticker_symbol)
+#     cursor.execute(SQL, values)
+#     price_volume = cursor.fetchall()
+#     sum_buys_trade_volume = 0
+#     sum_trade_volume = 0
+#     for i in price_volume:
+#         if float(i[0]) > 0:
+#             sum_buys_trade_volume += (float(i[0]) *float(i[1]))
+#             sum_trade_volume += float(i[1])
+#     vwap = (sum_buys_trade_volume/sum_trade_volume)
+#     SQL_input = '''UPDATE Holdings SET volume_weighted_average_price = ?
+#  WHERE account_pk = ? AND ticker_symbol = ?'''
+#     values_input = (vwap, account_pk, 'TSLA')
+#     cursor.execute(SQL_input, values_input)
+#     close(connection, cursor)
 
 
-def input_vwap_AAPL(account_pk, ticker_symbol):
-    connection, cursor = connect()
-    SQL = '''SELECT last_price, trade_volume FROM Orders WHERE account_pk = ?
-AND ticker_symbol = ?'''
-    values = (account_pk, ticker_symbol)
-    cursor.execute(SQL, values)
-    price_volume = cursor.fetchall()
-    sum_buys_trade_volume = 0
-    sum_trade_volume = 0
-    for i in price_volume:
-        if float(i[0]) > 0:
-            sum_buys_trade_volume += (float(i[0]) *float(i[1]))
-            sum_trade_volume += float(i[1])
-    vwap = (sum_buys_trade_volume/sum_trade_volume)
-    SQL_input = '''UPDATE Holdings SET volume_weighted_average_price = ?
- WHERE account_pk = ? AND ticker_symbol = ?'''
-    values_input = (vwap, account_pk, 'AAPL')
-    cursor.execute(SQL_input, values_input)
-    close(connection, cursor)
+# def input_vwap_AAPL(account_pk, ticker_symbol):
+#     connection, cursor = connect()
+#     SQL = '''SELECT last_price, trade_volume FROM Orders WHERE account_pk = ?
+# AND ticker_symbol = ?'''
+#     values = (account_pk, ticker_symbol)
+#     cursor.execute(SQL, values)
+#     price_volume = cursor.fetchall()
+#     sum_buys_trade_volume = 0
+#     sum_trade_volume = 0
+#     for i in price_volume:
+#         if float(i[0]) > 0:
+#             sum_buys_trade_volume += (float(i[0]) *float(i[1]))
+#             sum_trade_volume += float(i[1])
+#     vwap = (sum_buys_trade_volume/sum_trade_volume)
+#     SQL_input = '''UPDATE Holdings SET volume_weighted_average_price = ?
+#  WHERE account_pk = ? AND ticker_symbol = ?'''
+#     values_input = (vwap, account_pk, 'AAPL')
+#     cursor.execute(SQL_input, values_input)
+#     close(connection, cursor)
 
 
 def create_vwap(account_pk, ticker_symbol, number_of_shares, price):
     volume_x_price = number_of_shares * price
     vwap = volume_x_price / number_of_shares
     return vwap
-
-
-
 
 
 
