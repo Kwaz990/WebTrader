@@ -2,3 +2,7 @@ venv
 *.pyc
 temp_ttrade_files
 migrations
+bak
+logs
+*.swp
+*.db
