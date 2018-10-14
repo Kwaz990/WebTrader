@@ -363,11 +363,37 @@ def weighted_average_price():
         lst.append([vol*price])
     weight = sum(lst)
     weighted_average = weight/total_shares
-    sql_input = '''UPDATE Holdings SET weighted_average_price = ? WHERE pk = ? '''
+    sql_input = '''UPDATE Holdings SET weighted_average_price = ? WHERE account_pk = ? '''
     input_values = (weighted_average, pk)
     cursor.execute()
     close(connnection, cursor)
 
+def price_per_loss_open():
+    connection, cursor = connect()
+    sql = '''SELECT weighted_average_price FROM Holdings WHERE ticker_symbol = ? and account_pk = ? '''
+    values = (ticker_symbol, pk)
+    cursor.execute( sql, values)
+    purchase_price = cursor.fetchone()
+    current_price = quote(ticker_symbol)
+    price_per_loss_open = (current_price - purchase_price[0])/purchase_price[0]
+    sql_input = '''UPDATE Holdings SET price_per_loss_open = ? WHERE ticker_symbol = ? and account_pk = ?'''
+    input_values = (ticker_symbol, pk)
+    cursor.execute()
+    close(connection, cursor)
+
+def price_per_loss_percent():
+    connection, cursor = connect()
+    sql = '''SELECT wieghted_average_price FROM Holdings WHERE ticker_symbol = ? and account_pk = ?'''
+    values = (ticker_symbol, pk)
+    cursor.execute(sql, values)
+    purchas_price = cursor.fetchone()
+    current_price = quote(ticker_symbol)
+    price_per_loss = (current_price - purchase_price[0])/purchas_price[0]
+    price_per_loss_percent = price_per_loss/100
+    sql_input = '''UPDATE Holdings SET price_per_loss_percent = ? WHERE ticker_symbol = ? and account_pk =?'''
+    input_values = (price_per_loss_percent, ticker_symbol, pk)
+    cursor.execute()
+    close(connection, cursor)
 
 
 

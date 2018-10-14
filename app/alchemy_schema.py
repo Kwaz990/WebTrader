@@ -42,7 +42,6 @@ class Holdings(db.Model):
     weighted_average_price = db.Column(db.Float)
     price_per_loss_open = db.Column(db.Float)
     price_per_loss_percent = db.Column(db.Float)
-    last_price = db.Column(db.Float)
     volume_weighted_average_price = db.Column(db.Float)
     account_pk = db.Column(db.Integer, db.ForeignKey('accounts.id'))
 

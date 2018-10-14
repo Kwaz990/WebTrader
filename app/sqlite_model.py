@@ -184,8 +184,6 @@ def get_accounts():
     return accounts_list
 
 
-
-
 def get_balance(pk):
    connection, cursor = connect()
    sql = "SELECT balance FROM accounts WHERE pk = ?"
