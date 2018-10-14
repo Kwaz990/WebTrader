@@ -6,12 +6,6 @@ from hashlib import md5
 from flask_login import UserMixin, login_required
 
 
-@login.user_loader
-def load_user(id):
-   # return accounts
-    return Accounts.query.get((int(id)))
-
-
 class Accounts(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index= True, unique = True)

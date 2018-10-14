@@ -47,4 +47,4 @@ if not app.debug:
 
 
 
-from app import model, alchemy_schema, errors
+from app import model, alchemy_schema, errors, routes
