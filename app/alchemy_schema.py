@@ -6,7 +6,6 @@ from hashlib import md5
 from flask_login import UserMixin, login_required
 
 
-
 @login.user_loader
 def load_user(id):
    # return accounts
@@ -40,12 +39,16 @@ class Holdings(db.Model):
     id = db.Column(db.Integer, primary_key= True)
     ticker_symbol = db.Column(db.String(20))
     number_of_shares = db.Column(db.Integer)
+    weighted_average_price = db.Column(db.Float)
+    price_per_loss_open = db.Column(db.Float)
+    pricer_per_loss_percent = db.Column(db.Float)
+    last_price = db.Column(db.Float)
     volume_weighted_average_price = db.Column(db.Float)
     account_pk = db.Column(db.Integer, db.ForeignKey('accounts.id'))
 
 
     def __repr__(self):
-        return '<holdings> ticker_symbol: {}, number_of_shares: {}, VWAP: {}'.format(self.ticker_symbol, self.number_of_shares, self.volume_weighted_average_price)
+        return '<holdings> ticker_symbol: {}, number_of_shares: {}, weighted_average_price: {}, price_per_loss_open: {}, price_per_loss_percent: {}, last_price: {}, VWAP: {}'.format(self.ticker_symbol, self.number_of_shares, self.price_per_loss_open, self.pricer_per_loss_percent,  self.last_price, self.volume_weighted_average_price)
 
 
 class Orders(db.Model):

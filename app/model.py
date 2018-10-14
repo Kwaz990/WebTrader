@@ -11,7 +11,7 @@ from app.alchemy_schema import Accounts, Holdings, Orders
 from werkzeug.urls import url_parse
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
-
+import random
 
 
 
@@ -81,7 +81,7 @@ def register():
         return redirect(url_for('index'))
     form = RegistrationForm()
     if form.validate_on_submit():
-        user = Accounts(username = form.username.data, email = form.email.data, password_hash = password.form.data, balance = 100.00, api_key = random.randint(10000, 99000))
+        user = Accounts(username = form.username.data, email = form.email.data, password_hash = form.password.data, balance = 100.00, api_key = random.randint(10000, 99000))
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
@@ -317,13 +317,13 @@ def call_get_holdings():
     return render_template('holdings.html', title = 'Holdings', form = form)
 
 
-
+#TO DO remove the automatic Vwap for user with pk 1
 def get_holdings(pk):
     connection, cursor = connect()
     if pk == 1:
         input_vwap_TSLA(pk, 'TSLA')
         input_vwap_AAPL(pk, 'AAPL')
-    SQL = "SELECT ticker_symbol, number_of_shares, volume_weighted_average_price FROM Holdings WHERE account_pk = ?"
+    SQL = "SELECT ticker_symbol, number_of_shares, weighted_average_price, price_per_loss_open, price_per_loss_percent, last_price, volume_weighted_average_price FROM Holdings WHERE account_pk = ?"
     values = (pk,)
     cursor.execute(SQL, values)
     testvar2 = cursor.fetchall()
@@ -333,7 +333,11 @@ def get_holdings(pk):
         dic = {
             "ticker_symbol":row[0],
             "number_of_shares":row[1],
-            'volume_weighted_average_price': row[2]
+            "weighted_average_price":row[2],
+            "price_per_loss_open": row[3],
+            "price_per_loss_percent": row[4],
+            'last_price': row[5],
+            'volume_weighted_average_price': row[6]
         }
         result.append(dic)
         #result.append(row)
