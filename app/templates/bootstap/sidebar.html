@@ -1,0 +1,43 @@
+<div class="card my-4">
+        <h5 class="card-header">Look Up Stock</h5>
+        <div class="card-body">
+          <div class="input-group">
+            <input type="text" class="form-control" placeholder="Ticker Symbol">
+            <span class="input-group-btn">
+              <button class="btn btn-secondary" type="button">Go!</button>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Categories Widget -->
+      <div class="card my-4">
+        <h5 class="card-header">Navigation</h5>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-lg-12">
+              <ul class="list-unstyled mb-0">
+                      Webtrader: 
+                      <li><a href="{{ url_for('index') }}">Home</a></li>
+                      <li><a href="{{ url_for('markets') }}">Markets</a></li>
+                      <li><a href="{{ url_for('call_get_holdings') }}">Holdings</a></li>
+                      <li><a href="{{ url_for('call_orders') }}">Order History</a></li>
+                      <li><a href="{{ url_for('settings') }}">Settings</a></li>
+                      {% if current_user.is_anonymous %}
+                      <li><a href="{{ url_for('login') }}">Login</a></li>
+                      {% else %}
+                      <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                      {% endif %}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side Widget -->
+      <div class="card my-4">
+        <h5 class="card-header">Some Sidetext</h5>
+        <div class="card-body">
+            Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.
+        </div>
+      </div>

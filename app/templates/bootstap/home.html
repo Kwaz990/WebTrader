@@ -1,12 +1,13 @@
-{% extends "base.html" %}
+{% extends "bootstap/view.html" %}
 
-{% block content %}
+{% block main %}
+<div class="row" style="position:relative;">
     <h1>Hi, {{ current_user.username }}!</h1>
     <div><b><p>Your current balance is: {{ current_user.balance }}</div></b></p>
     <p></p>
     <p></p>
     <div><b><p>Holdings Overview:</div><b></p>
-    <table class = "table">
+    <table class = "table" style="width:100%;">
         <tr class = "labels">
             <td> Ticker Symbol </td>
             <td> Number of Shares </td>
@@ -27,4 +28,5 @@
     {% endfor %}
     </table>
     <p> {{ holdings }} </p>
+    </div>
 {% endblock %}

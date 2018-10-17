@@ -2,7 +2,7 @@
 
 {% block content %}
     <h1>Holdings</h1>
-    <form action="{{ url_for('call_get_holdings') }}" method="post">
+    <form method="post">
         {{ form.hidden_tag() }}
         <p> Enter ticker symbol to display holdings </p>
         <p>

@@ -122,7 +122,7 @@ def get_holdings(pk):
     # if pk == 1:
     #     input_vwap_TSLA(pk, 'TSLA')
     #     input_vwap_AAPL(pk, 'AAPL')
-    SQL = "SELECT ticker_symbol, number_of_shares, weighted_average_price, price_per_loss_open, price_per_loss_percent, last_price, volume_weighted_average_price FROM Holdings WHERE account_pk = ?"
+    SQL = "SELECT ticker_symbol, number_of_shares, weighted_average_price, price_per_loss_open, price_per_loss_percent, volume_weighted_average_price FROM Holdings WHERE account_pk = ?"
     values = (pk,)
     cursor.execute(SQL, values)
     testvar2 = cursor.fetchall()
@@ -135,8 +135,7 @@ def get_holdings(pk):
             "weighted_average_price":row[2],
             "price_per_loss_open": row[3],
             "price_per_loss_percent": row[4],
-            'last_price': row[5],
-            'volume_weighted_average_price': row[6]
+            'volume_weighted_average_price': row[5]
         }
         result.append(dic)
         #result.append(row)
@@ -145,53 +144,137 @@ def get_holdings(pk):
     #return row
 
 
-def weighted_average_price():
+def quote(ticker_symbol):
+    endpoint = 'http://dev.markitondemand.com/MODApis/Api/v2/Quote/json?symbol=' + ticker_symbol
+    response = requests.get(endpoint).text
+    jsondata = json.loads(response)
+    return jsondata.get('LastPrice')
+
+# select all the ticker symbols in the holdings table and save to a variable. then call the last price and number of shares for each. perform calc and then return 
+# def weighted_average_price_fix(account_pk, ticker_symbol):
+#     connect, cursor = connect()
+#     sql = '''SELECT * from Holdings WHERE account_pk = ? AND ticker_symbol = ?'''
+#     #sql = '''SELECT trade_volume, last_price From Orders WHERE account_pk = ? AND ticker_symbol = ? '''
+#         values = (account_pk, ticker_symbol)
+#     cursor.execute(sql, values)
+#     fetch = cursor.fetchall()
+#     #volume_and_price = cursor.fetchall()
+#     all_tickers = []
+#     total_shares = 1
+#     close(connection, cursor)
+#     for i in fetch:
+#         all_tickers.append(i)
+#     # for i in volume_and_price:
+#     #     for _ in i:
+#     #         vol = _
+#     #         price = _
+#     #         total_shares += vol
+#     #     x = vol * price    
+#     #     lst.append(x)
+#     weight = sum(lst)
+#     weighted_average = weight/total_shares
+#     return weighted_average 
+
+
+
+
+# FIX ME: these new functions should pull values from the Orders table, calculate and then be returned to the index page instead of being values in the database.
+# def weighted_average_price(account_pk, ticker_symbol):
+#     connection, cursor = connect()
+#     sql = '''SELECT trade_volume, last_price FROM Orders WHERE account_pk = ? AND ticker_symbol = ?'''
+#     values = (account_pk, ticker_symbol)
+#     cursor.execute(sql, values)
+#     volume_and_price = cursor.fetchall()
+#     lst = []
+#     total_shares = 1
+#     #close(connection, cursor)
+#     for row in volume_and_price:
+#         if row > 0:
+#             total_shares += row[0]
+#         x = row[0] * row[1]
+#         #x = the sum of dollar value of transactions  
+#         lst.append(-1*x)
+#     weight = sum(lst)
+#     weighted_average = weight/total_shares
+#     sql_input = '''UPDATE Holdings SET weighted_average_price = ? WHERE account_pk = ? '''
+#     input_values = (weighted_average, account_pk)
+#     cursor.execute(sql_input, input_values)
+#     close(connection, cursor)
+
+
+def average_purchase_price(account_pk, ticker_symbol):
+    result = None
     connection, cursor = connect()
-    sql = '''SELECT trade_volume, last_price FROM Orders WHERE pk = ?, ticker_symbol = ?'''
-    values = (pk, ticker_symbol)
+    sql = '''SELECT trade_volume, last_price FROM Orders WHERE account_pk = ? AND ticker_symbol = ?'''
+    values = (account_pk, ticker_symbol)
     cursor.execute(sql, values)
     volume_and_price = cursor.fetchall()
-    lst = []
-    total_shares = 0
+    total_volume = 0
+    total_price = 0.0
+    for row in volume_and_price:
+        volume = row[0]
+        price = row[1]
+        if volume > 0:
+            total_volume += volume
+            total_price += price
+    if total_volume > 0:
+        result = total_price/total_volume
     close(connection, cursor)
-    for i in volume_and_price:
-        for _ in i:
-            vol = _[0]
-            price = _[1]
-            total_shares += vol
-        lst.append([vol*price])
-    weight = sum(lst)
-    weighted_average = weight/total_shares
-    sql_input = '''UPDATE Holdings SET weighted_average_price = ? WHERE account_pk = ? '''
-    input_values = (weighted_average, pk)
-    cursor.execute()
-    close(connnection, cursor)
+    return result
 
-def price_per_loss_open():
+
+def average_sale_price(account_pk, ticker_symbol):
+    result = None
+    connection, cursor = connect()
+    sql = '''SELECT trade_volume, last_price FROM Orders WHERE account_pk = ? AND ticker_symbol = ?'''
+    values = (account_pk, ticker_symbol)
+    cursor.execute(sql, values)
+    volume_and_price = cursor.fetchall()
+    total_volume = 0
+    total_price = 0.0
+    for row in volume_and_price:
+        volume = row[0]
+        price = row[1]
+        if volume < 0:
+            total_volume += volume*-1
+            total_price += price
+    if total_volume > 0:
+        result = total_price/total_volume
+    close(connection, cursor)
+    return result
+
+
+
+
+def price_per_loss_open(account_pk, ticker_symbol):
     connection, cursor = connect()
     sql = '''SELECT weighted_average_price FROM Holdings WHERE ticker_symbol = ? and account_pk = ? '''
-    values = (ticker_symbol, pk)
-    cursor.execute( sql, values)
+    values = (ticker_symbol, account_pk)
+    cursor.execute(sql, values)
     purchase_price = cursor.fetchone()
     current_price = quote(ticker_symbol)
+    if purchase_price == None:
+        purchase_price = current_price    
     price_per_loss_open = (current_price - purchase_price[0])/purchase_price[0]
-    sql_input = '''UPDATE Holdings SET price_per_loss_open = ? WHERE ticker_symbol = ? and account_pk = ?'''
-    input_values = (ticker_symbol, pk)
-    cursor.execute()
+    sql_input = '''UPDATE Holdings SET price_per_loss_open = ? WHERE ticker_symbol = ? AND account_pk = ?'''
+    input_values = (price_per_loss_open, ticker_symbol, account_pk)
+    cursor.execute(sql_input, input_values)
     close(connection, cursor)
 
-def price_per_loss_percent():
+def price_per_loss_percent(account_pk, ticker_symbol):
     connection, cursor = connect()
-    sql = '''SELECT wieghted_average_price FROM Holdings WHERE ticker_symbol = ? and account_pk = ?'''
-    values = (ticker_symbol, pk)
+    sql = '''SELECT weighted_average_price FROM Holdings WHERE ticker_symbol = ? AND account_pk = ?'''
+    values = (ticker_symbol, account_pk)
     cursor.execute(sql, values)
-    purchas_price = cursor.fetchone()
+    purchase_price = cursor.fetchone()
     current_price = quote(ticker_symbol)
-    price_per_loss = (current_price - purchase_price[0])/purchas_price[0]
+    if purchase_price == None:
+        purchase_price = current_price
+    price_per_loss = (current_price - purchase_price[0])/purchase_price[0]
     price_per_loss_percent = price_per_loss/100
-    sql_input = '''UPDATE Holdings SET price_per_loss_percent = ? WHERE ticker_symbol = ? and account_pk =?'''
-    input_values = (price_per_loss_percent, ticker_symbol, pk)
-    cursor.execute()
+    sql_input = '''UPDATE Holdings SET price_per_loss_percent = ? WHERE ticker_symbol = ? AND account_pk =?'''
+    input_values = (price_per_loss_percent, ticker_symbol, account_pk)
+    cursor.execute(sql_input, input_values)
     close(connection, cursor)
 
 def get_holding(pk, ticker_symbol):
@@ -236,11 +319,11 @@ def get_orders(pk, ticker_symbol, cutoff = '1970-01-01'):
 
 def create_holding(account_pk, ticker_symbol, number_of_shares, price):
     connection, cursor = connect()
-    SQL = '''INSERT INTO Holdings (account_pk, ticker_symbol, number_of_shares, volume_weighted_average_price)
-VALUES (?, ?, ?, ?)'''
-    values = (account_pk, ticker_symbol.upper(), number_of_shares, create_vwap(account_pk, ticker_symbol, number_of_shares, price))
+    SQL = '''INSERT INTO Holdings (account_pk, ticker_symbol, number_of_shares, weighted_average_price, price_per_loss_open, price_per_loss_percent)
+VALUES (?, ?, ?, ?, ?, ?)'''
+    values = (account_pk, ticker_symbol.upper(), number_of_shares, weighted_average_price(account_pk, ticker_symbol), price_per_loss_open(account_pk, ticker_symbol), price_per_loss_percent(account_pk, ticker_symbol)) #create_vwap(account_pk, ticker_symbol, number_of_shares, price))
     cursor.execute(SQL, values)
-    close( connection, cursor)
+    close(connection, cursor)
     return True
 
 def get_price(account_pk, ticker_symbol):
@@ -319,9 +402,9 @@ def TWAP(ticker_symbol):
 
 def modify_holding(account_pk, ticker_symbol, number_of_shares):
     connection, cursor = connect()
-    SQL = '''UPDATE Holdings SET number_of_shares = ?, volume_weighted_average_price =?
+    SQL = '''UPDATE Holdings SET number_of_shares = ?
 WHERE ticker_symbol = ? AND  account_pk = ?'''
-    values = (number_of_shares, modify_vwap(account_pk, ticker_symbol, number_of_shares), ticker_symbol, account_pk)
+    values = (number_of_shares, ticker_symbol, account_pk)
     cursor.execute(SQL, values)
     close(connection, cursor)
 

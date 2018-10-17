@@ -12,6 +12,13 @@ import requests
 from functools import lru_cache
 from datetime import datetime
 
+
+@app.route('/bootstap')
+def bootstap():
+    return render_template('bootstap/index.html')
+
+
+
 @login.user_loader
 def load_user(id):
    # return accounts
@@ -26,10 +33,11 @@ def index():
     balance = str(get_balance(current_user.id))
    # holdings = [i for i in get_holdings(current_user.id)]
     holdings =  get_holdings(current_user.id)
+    #weighted_average = weighted_average_fix(current_user.id, ticker_symbol)
    # ticker_symbol = Holdings.query.filter_by(username=current_user).get(ticker_symbol)
    # holdings = [
    #     {'positions': ticker_symbol, 'positions': number_of_shares} ]
-    return render_template('index.html', title='Home', balance = balance, holdings = holdings)
+    return render_template('bootstap/home.html', title='Home', balance = balance, holdings = holdings)
 
 
 @app.route('/buy', methods=['GET', 'POST'])
@@ -47,9 +55,9 @@ def buy(account_pk, ticker_symbol, volume):
         modify_balance(account_pk, new_balance)
         create_order(account_pk, ticker_symbol.upper(), volume, stock_price)
         return True
-    else:
-        flash('Transaction Succesful!')
-        return redirect(url_for('index'))
+    #else:
+    flash('Transaction Succesful!')
+    return redirect(url_for('index'))
     #flash('Transaction Failed!')
     return redirect(url_for('markets'))
 
@@ -68,7 +76,7 @@ def before_request():
 @login_required
 def settings():
     form = SettingsForm()
-    return render_template('settings.html', title='Settings', form = form)
+    return render_template('bootstap/settings.html', title='Settings', form = form)
 
 
 
@@ -96,7 +104,7 @@ def sell(account_pk, ticker_symbol, number_of_shares):
         new_amount = get_balance(account_pk) + (float(number_of_shares) * last_price)
         modify_balance(account_pk, new_amount)
         #Create Order
-        create_order(account_pk, ticker_symbol, int(number_of_shares), last_price)
+        create_order(account_pk, ticker_symbol, -1*int(number_of_shares), last_price)
         #Return True
         flash('Transaction succesful!')
         return redirect(url_for('index'))
@@ -134,7 +142,7 @@ def call_get_holdings():
     form = HoldingsForm()
     if form.validate_on_submit():
         ticker_symbol = form.ticker_symbol.data
-        return redirect(url_for('holdings_specific', ticker_symbol=ticker_symbol))
+        return redirect('/holdings_specific/{}'.format(ticker_symbol))
    # holdings = get_holdings(current_user.id)
     return render_template('holdings.html', title = 'Holdings', form = form)
 
@@ -148,8 +156,8 @@ def holdings_specific(ticker_symbol):
     return render_template('holdings_specific.html', title= 'Specific Holdings', holding = holding)
 
 
-# FIXME: should this function be attached to a route?
-@app.route('/quote', methods=['GET', 'POST'])
+# # FIXME: should this function be attached to a route?
+# @app.route('/quote', methods=['GET', 'POST'])
 @lru_cache()
 def quote(ticker_symbol):
     endpoint = 'http://dev.markitondemand.com/MODApis/Api/v2/Quote/json?symbol=' + ticker_symbol
@@ -270,7 +278,7 @@ def login():
         return redirect(next_page)
         return redirect(url_for('index'))
     print("did not validate")
-    return render_template('login.html', title = 'Sign In', form = form)
+    return render_template('bootstap/login.html', title = 'Sign In', form = form)
 
 
 @app.route('/register', methods=['GET','POST'])
