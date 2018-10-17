@@ -153,7 +153,12 @@ def call_get_holdings():
 def holdings_specific(ticker_symbol):
   #  ticker_symbol = request.form['ticker_symbol']
     holding = get_holding(current_user.id, ticker_symbol)
-    return render_template('holdings_specific.html', title= 'Specific Holdings', holding = holding)
+    price = quote(ticker_symbol)
+    if holding:
+        value = holding*price
+    else:
+        value = 0.0 
+    return render_template('holdings_specific.html', title= 'Specific Holdings', holding = holding, price = price, value = value, ticker_symbol=ticker_symbol)
 
 
 # # FIXME: should this function be attached to a route?

@@ -1,10 +1,14 @@
-{% extends "base.html" %}
+{% extends "bootstap/view.html" %}
 
-{% block content %}
-    <h1>Holdings for </h1>
-    <form action="" method="get">
+{% block main %}
+    <h1>Holdings for {{ ticker_symbol }} </h1>
+        {% if holding %}
         <p>
-            {{ holding }}
+           You have {{ holding }} shares {{ ticker_symbol }} at {{ price }} at {{ value }}
         </p>
-    </form>
+        {% else %}
+        <p>
+        You hold no shares of {{ ticker_symbol }} with a current value of {{ price }}
+        </p>
+        {% endif %}
 {% endblock %} 
