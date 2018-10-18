@@ -1,0 +1,33 @@
+{% extends "bootstap/view.html" %}
+
+{% block main %}
+    <h1>Withdraw Funds</h1>
+        <form action="" method="post">
+        {{ form.hidden_tag() }}
+           <div><p>Current banalnce: {{ current_user.balance }}</div></p>
+            <p>
+                {{ form.withdraw.label }}<br>
+                {{ form.withdraw(size=32) }}<br>
+                {% for error in form.withdraw.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+                {% endfor %}
+            </p>
+            <p>
+                {{ form.bank_address.label }}<br>
+                {{ form.bank_address(size=32) }}<br> 
+                {% for error in form.bank_address.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+                {% endfor %}
+            </p>
+            <p>
+                {{ form.btc_address.label }}<br>
+                {{ form.btc_address(size=32) }}<br>
+                {% for error in form.btc_address.errors %}
+                <span style="color: red;">[{{ error }}]</span>
+                {% endfor %}
+            </p>
+            <p>
+                {{ form.submit() }}
+            </p>
+        </form>
+{% endblock %}

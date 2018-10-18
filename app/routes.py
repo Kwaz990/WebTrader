@@ -121,7 +121,7 @@ def call_orders():
        # result = get_orders(current_user.id, form.ticker_symbol.data)
         return redirect('orders_specific')
       #  return result
-    return render_template('orders.html', title = 'Order History', form = form)
+    return render_template('bootstap/orders.html', title = 'Order History', form = form)
 
 
 @app.route('/orders_specific', methods=['GET', 'POST'])
@@ -189,7 +189,7 @@ def update_password():
         return redirect(url_for('index'))
    # flash('An error has occured while attempting to update password.')
   #  return redirect(url_for('update_password'))
-    return render_template('update_password.html', title ='Update Password', form = form)
+    return render_template('bootstap/update_password.html', title ='Update Password', form = form)
 
 
 @app.route('/update_email', methods=['GET','POST'])
@@ -207,7 +207,7 @@ def update_email():
         return redirect(url_for('index'))
  #   flash('An error has occure while attempting to update email.')
 #    return redirect(url_for('update_email'))
-    return render_template('update_email.html', title = 'Update Email', form= form)
+    return render_template('bootstap/update_email.html', title = 'Update Email', form= form)
 
 
 @app.route('/withdraw', methods=['GET', 'POST'])
@@ -215,19 +215,27 @@ def update_email():
 def withdraw():
     form = WithdrawForm()
     if form.validate_on_submit:
+        if form.withdraw.data != None:
        # if current_user.balance < 10.00:
         #You need to figure out how to make it work only with th euser input
-       form.withdraw.data = 10.00
-       if float(form.withdraw.data) > current_user.balance:
-            flash('Cannot complete trasaction due to insufficient funds.')
-            return redirect(url_for('index'))
-       new_balance = current_user.balance - form.withdraw.data
-       current_user.balance = new_balance
-       db.session.commit()
-       flash('Withdraw Succesful!')
-       return redirect(url_for('index'))
-    flash('An error has occured')
-    return render_template('withdraw.html', title ='Withdraw Funds', form=form)
+       #form.withdraw.data = 10.00
+#       form.withdraw.data = 0.0
+       #if withdraw_amount == None:
+       # form.withdraw.data = 
+            if float(form.withdraw.data) > 0:
+                if float(form.withdraw.data) > current_user.balance:
+                    flash('Cannot complete trasaction due to insufficient funds.')
+                    return redirect(url_for('index'))
+                if float(form.withdraw.data) <= current_user.balance:           
+                    new_balance = current_user.balance - float(form.withdraw.data)
+                    current_user.balance = new_balance
+                    db.session.commit()
+                    flash('Withdraw Succesful!')
+                    return redirect(url_for('index'))
+            else:
+                flash('Withdraw amount must be a positive value')
+    #    flash('An error has occured')
+    return render_template('bootstap/withdraw.html', title ='Withdraw Funds', form=form)
 
 
 @app.route('/deposit', methods=['GET', 'POST'])
@@ -235,13 +243,17 @@ def withdraw():
 def deposit():
     form = DepositForm()
     if form.validate_on_submit():
-        new_balance = current_user.balance + float(form.deposit.data)
-        current_user.balance = new_balance
-        db.session.commit()
-        flash('Deposit Successful!')
-        return redirect(url_for('index'))
-    flash('An error occured')
-    return render_template('deposit.html', title='Deposit Funds', form = form)
+        if float(form.deposit.data) > 0:
+            new_balance = current_user.balance + float(form.deposit.data)
+            current_user.balance = new_balance
+            db.session.commit()
+            flash('Deposit Successful!')
+            return redirect(url_for('index'))
+        else:
+            flash('Deposit amount must be a positive value!')
+    else:
+        flash('An error occured')
+    return render_template('bootstap/deposit.html', title='Deposit Funds', form = form)
 
 
 #the purpose of this function is to call the buy function with the input parameters from from.data
@@ -256,7 +268,7 @@ def markets():
    # return redirect(url_for('markets')
         if form.sell:
             sell(current_user.id, form.ticker_symbol.data, form.volume.data)
-    return render_template('markets.html',  title ='Markets', form = form)
+    return render_template('bootstap/markets.html',  title ='Markets', form = form)
 
 
 @app.route('/logout')
@@ -298,6 +310,6 @@ def register():
         db.session.commit()
         flash('Registration Succesful!')
         return redirect(url_for('login'))
-    return render_template('register.html', title='Register', form = form)
+    return render_template('bootstap/register.html', title='Register', form = form)
 
 

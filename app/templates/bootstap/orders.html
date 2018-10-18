@@ -1,0 +1,17 @@
+{% extends "bootstap/view.html" %}
+
+{% block main %}
+    <h1>Order History</h1>
+    <form action="{{ url_for('orders_specific') }}" method="post">
+        {{ form.hidden_tag() }}
+        <p>Enter ticker symbol to display order history</p>
+        <p>
+            {{ form.ticker_symbol.label }}<br>
+            {{ form.ticker_symbol(size=32) }}<br>
+            {% for error in form.ticker_symbol.errors %}
+            <span style="color: red;">[{{ error }}]</span>
+            {% endfor %}
+        </p>
+        <p>{{ form.submit() }}</p>
+    </form>
+{% endblock %}

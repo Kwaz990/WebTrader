@@ -46,7 +46,7 @@ class DepositForm(FlaskForm):
 
 
 class WithdrawForm(FlaskForm):
-    withdraw = StringField('Amount to Withdraw (minimum: $10.00)', validators = [DataRequired()])
+    withdraw = StringField('Amount to Withdraw', validators = [DataRequired()])
     bank_address = StringField('Bank Routing Number')
     btc_address =StringField('Bitcoin address')
     submit = SubmitField('Confirm Withdraw')
