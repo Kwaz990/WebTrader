@@ -292,13 +292,37 @@ def get_holding(pk, ticker_symbol):
            return i[0]
 
 
+def get_orders_holdings(pk, ticker_symbol, cutoff = '1970-01-01'):
+    connection, cursor = connect()
+    SQL = '''SELECT ticker_symbol, last_price, trade_volume, timestamp FROM
+    Orders WHERE account_pk = ? AND ticker_symbol = ? AND timestamp >= ?'''
+    # for the cutoff_convert datetime.datetime was changed to datetime.
+    cutoff_convert = int(time.mktime(datetime.strptime(cutoff, "%Y-%m-%d").timetuple()))
+    values = (pk, ticker_symbol.upper(), cutoff_convert) #cutoff should be a string in yyyy-mm-dd format
+    cursor.execute(SQL, values)
+    lst = []
+    rows = cursor.fetchall() #What data structure does rows return as? a list, or dict?
+    close(connection, cursor)
+    for i in rows:
+        if rows == None:
+            return None
+        d = {
+        'ticker_symbol': i[0],
+        'last_price': i[1],
+        'trade_volume': i[2],
+        'timestamp': '{}'.format(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(i[3]))))}
+        lst.append(d)
+    return rows
+   
+
+
 def get_orders(pk, ticker_symbol, cutoff = '1970-01-01'):
     connection, cursor = connect()
     SQL = '''SELECT ticker_symbol, last_price, trade_volume, timestamp FROM
- Orders WHERE account_pk = ? AND ticker_symbol = ? AND timestamp >= ?;'''
+ Orders WHERE account_pk = ? AND ticker_symbol = ? AND timestamp >= ?'''
     # for the cutoff_convert datetime.datetime was changed to datetime.
     cutoff_convert = int(time.mktime(datetime.strptime(cutoff, "%Y-%m-%d").timetuple()))
-    values = (pk, ticker_symbol, cutoff_convert) #cutoff should be a string in yyyy-mm-dd format
+    values = (pk, ticker_symbol.upper(), cutoff_convert) #cutoff should be a string in yyyy-mm-dd format
     cursor.execute(SQL, values)
     lst = []
     rows = cursor.fetchall() #What data structure does rows return as? a list, or dict?
@@ -313,7 +337,7 @@ def get_orders(pk, ticker_symbol, cutoff = '1970-01-01'):
         'timestamp': '{}'.format(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(int(i[3]))))}
         lst.append(d)
    # return d
- #   return rows
+    #return rows
     return lst
     #return tuple(rows)
 

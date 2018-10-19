@@ -4,11 +4,30 @@
     <h1>Holdings for {{ ticker_symbol }} </h1>
         {% if holding %}
         <p>
-           You have {{ holding }} shares {{ ticker_symbol }} at {{ price }} at {{ value }}
+           You have {{ holding }} shares {{ ticker_symbol }} at ${{ price }} at a total value of ${{ value }}.
         </p>
+        <p>
+           The following is your transaction history:
+        </p>
+        <table class = "table">
+            <tr class = "labels">
+                <td> Ticker Symbol </td>
+                <td> Last Price </td>
+                <td> Trade Volume </td>
+                <td> Trade Date </td>
+            </tr>
+        {% for i in orders %}
+            <tr>
+                <td> {{ i[0] }} </td>
+                <td> {{ i[1] }} </td>
+                <td> {{ i[2] }} </td>
+                <td> {{ i[3] }} </td>
+            </tr>
+        {% endfor %}
+        </table>
         {% else %}
         <p>
-        You hold no shares of {{ ticker_symbol }} with a current value of {{ price }}
+        You hold no shares of {{ ticker_symbol }}. The current price of {{ticker_symbol}} is {{ price }}
         </p>
         {% endif %}
 {% endblock %} 

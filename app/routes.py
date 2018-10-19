@@ -4,8 +4,7 @@ from werkzeug.urls import url_parse
 from flask import render_template, flash, redirect, url_for, request, jsonify, json
 from app.forms import LoginForm, RegistrationForm, MarketForm, UpdateEmailForm, UpdatePasswordForm, WithdrawForm, DepositForm, SettingsForm, OrdersForm, HoldingsForm
 from app import app, db, login
-from app.model import get_balance, get_holdings, get_orders, get_holding, create_holding, modify_balance, modify_holding
-from app.model import create_order
+from app.model import get_balance, get_holdings, get_orders, get_holding, create_holding, modify_balance, modify_holding, create_order, average_purchase_price, average_sale_price, get_orders_holdings
 from werkzeug.security import generate_password_hash, check_password_hash
 import random
 import requests
@@ -33,6 +32,7 @@ def index():
     balance = str(get_balance(current_user.id))
    # holdings = [i for i in get_holdings(current_user.id)]
     holdings =  get_holdings(current_user.id)
+    #average_purchase = average_purchase_price(current_user.id, holdings_ticker)
     #weighted_average = weighted_average_fix(current_user.id, ticker_symbol)
    # ticker_symbol = Holdings.query.filter_by(username=current_user).get(ticker_symbol)
    # holdings = [
@@ -154,11 +154,12 @@ def holdings_specific(ticker_symbol):
   #  ticker_symbol = request.form['ticker_symbol']
     holding = get_holding(current_user.id, ticker_symbol)
     price = quote(ticker_symbol)
+    orders = get_orders_holdings(current_user.id, ticker_symbol)
     if holding:
         value = holding*price
     else:
         value = 0.0 
-    return render_template('holdings_specific.html', title= 'Specific Holdings', holding = holding, price = price, value = value, ticker_symbol=ticker_symbol)
+    return render_template('holdings_specific.html', title= 'Specific Holdings', holding = holding, price = price, value = value, ticker_symbol=ticker_symbol, orders = orders)
 
 
 # # FIXME: should this function be attached to a route?
